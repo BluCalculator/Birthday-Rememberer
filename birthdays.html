@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Matthew Abinett">
+    <title>Birthday Countdown</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        button {
+            margin-left: 10px;
+        }
+
+        /* Add a fixed width for the days display */
+        .dayslabel {
+            width: 400px;
+            display: inline-block;
+        }
+        .daysuntil {
+            width: 40px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Birthday Countdown</h1>
+
+<label for="labelInput">Enter Label: </label>
+<input type="text" id="labelInput" placeholder="Enter label...">
+<br>
+<label for="birthdayInput">Enter Birthday (DD-MM): </label>
+<input type="text" id="birthdayInput" placeholder="Enter birthday etc...">
+<button onclick="addBirthday()">Add Date</button>
+
+<ul id="birthdayList"></ul>
+
+<script>
+    // Function to load saved birthdays from localStorage
+    function loadBirthdays() {
+        const savedBirthdays = JSON.parse(localStorage.getItem('birthdays')) || [];
+        const birthdayList = document.getElementById("birthdayList");
+
+        // Clear the existing list
+        birthdayList.innerHTML = "";
+
+        // Sort the birthdays by days remaining
+        savedBirthdays.sort((a, b) => a.daysUntil - b.daysUntil);
+
+        savedBirthdays.forEach(birthday => {
+            appendBirthdayToList(birthday);
+        });
+    }
+
+    // Function to add a birthday
+    function addBirthday() {
+        const labelInput = document.getElementById("labelInput");
+        const birthdayInput = document.getElementById("birthdayInput");
+
+        // Get the entered label and birthday
+        const enteredLabel = labelInput.value;
+        const enteredBirthday = birthdayInput.value;
+        const [day, month] = enteredBirthday.split("-").map(Number);
+
+        // Check if the entered date is valid
+        if (isNaN(day) || isNaN(month) || day < 1 || day > 31 || month < 1 || month > 12) {
+            alert("Invalid date. Please enter a valid date in DD-MM format.");
+            return;
+        }
+
+        // Get today's date
+        const today = new Date();
+
+        // Set the year of the entered birthday to the current year
+        const nextBirthday = new Date(today.getFullYear(), month - 1, day);
+
+        // If the birthday has already occurred this year, set it for next year
+        if (today > nextBirthday) {
+            nextBirthday.setFullYear(today.getFullYear() + 1);
+        }
+
+        // Calculate the number of days until the next birthday
+        const daysUntilBirthday = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+
+        // Create a new birthday object
+        const newBirthday = { label: enteredLabel, date: enteredBirthday, daysUntil: daysUntilBirthday };
+
+        // Save the birthday to localStorage
+        const savedBirthdays = JSON.parse(localStorage.getItem('birthdays')) || [];
+        savedBirthdays.push(newBirthday);
+        localStorage.setItem('birthdays', JSON.stringify(savedBirthdays));
+
+        // Sort the birthdays by days remaining
+        savedBirthdays.sort((a, b) => a.daysUntil - b.daysUntil);
+
+        // Clear the existing list
+        birthdayList.innerHTML = "";
+
+        // Add the sorted birthdays to the list
+        savedBirthdays.forEach(birthday => {
+            appendBirthdayToList(birthday);
+        });
+
+        // Clear the input fields
+        labelInput.value = "";
+        birthdayInput.value = "";
+    }
+
+    // Function to append a birthday to the list
+    function appendBirthdayToList(birthday) {
+        const birthdayList = document.getElementById("birthdayList");
+
+        const listItem = document.createElement("li");
+
+        // Create a container for the days display
+        const labelContainer = document.createElement("span");
+        labelContainer.classList.add("dayslabel");
+        labelContainer.textContent = `Days until ${birthday.label} on ${birthday.date}:`;
+		
+        const daysContainer = document.createElement("span");
+        daysContainer.classList.add("daysuntil");
+        daysContainer.textContent = `${birthday.daysUntil}`;
+        
+		const editButton = document.createElement("button");
+        editButton.textContent = "Edit";
+        editButton.onclick = () => editBirthday(birthday);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.onclick = () => deleteBirthday(birthday);
+
+        listItem.appendChild(labelContainer);
+        listItem.appendChild(daysContainer);
+        listItem.appendChild(editButton);
+        listItem.appendChild(deleteButton);
+
+        birthdayList.appendChild(listItem);
+    }
+
+    // Function to edit a birthday
+    function editBirthday(birthday) {
+        const labelInput = document.getElementById("labelInput");
+        const birthdayInput = document.getElementById("birthdayInput");
+
+        // Fill the input fields with the existing data
+        labelInput.value = birthday.label;
+        birthdayInput.value = birthday.date;
+
+        // Delete the existing birthday entry
+        deleteBirthday(birthday);
+    }
+
+    // Function to delete a birthday
+    function deleteBirthday(birthday) {
+        const savedBirthdays = JSON.parse(localStorage.getItem('birthdays')) || [];
+
+        // Remove the birthday from the savedBirthdays array
+        const index = savedBirthdays.findIndex(b => b.label === birthday.label && b.date === birthday.date);
+        if (index !== -1) {
+            savedBirthdays.splice(index, 1);
+
+            // Save the updated array to localStorage
+            localStorage.setItem('birthdays', JSON.stringify(savedBirthdays));
+
+            // Refresh the displayed list
+            loadBirthdays();
+        }
+    }
+
+    // Load saved birthdays on page load
+    loadBirthdays();
+</script>
+
+</body>
+</html>
